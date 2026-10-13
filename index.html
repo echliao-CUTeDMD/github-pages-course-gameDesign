@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>114下_遊戲程式設計</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --header-h: 330px;
+      --footer-h: 124px;
+      --night: #070714;
+      --sky: #11132a;
+      --brick: #351414;
+      --wood: #5a2717;
+      --tile: #1a1026;
+      --panel: #1a1324;
+      --paper: #fff0bc;
+      --gold: #ffc247;
+      --red: #dc2626;
+      --red-dark: #7f1212;
+      --cyan: #33e7ff;
+      --green: #35e48a;
+      --ink: #fff7d6;
+      --black: #05050b;
+      --shadow: 0 0 0 4px var(--black), 0 10px 0 var(--black), 0 22px 36px rgba(0, 0, 0, .48);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      font-family: "Microsoft JhengHei", "Noto Sans TC", "Segoe UI", monospace;
+      line-height: 1.5;
+      background:
+        linear-gradient(180deg, rgba(7, 7, 20, .48), rgba(7, 7, 20, .98)),
+        repeating-linear-gradient(90deg, transparent 0 30px, rgba(255,255,255,.035) 30px 32px),
+        linear-gradient(180deg, #15193a 0 42%, #23101b 42% 100%);
+      image-rendering: pixelated;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 18% 16%, rgba(255, 194, 71, .18), transparent 18%),
+        radial-gradient(circle at 78% 12%, rgba(220, 38, 38, .20), transparent 20%),
+        repeating-linear-gradient(0deg, rgba(255,255,255,.045) 0 1px, transparent 1px 4px);
+      mix-blend-mode: screen;
+      z-index: -2;
+    }
+
+    .hero {
+      position: fixed;
+      inset: 0 0 auto 0;
+      z-index: 20;
+      height: var(--header-h);
+      padding: 34px clamp(18px, 4vw, 58px) 42px;
+      border-bottom: 8px solid var(--black);
+      background:
+        linear-gradient(180deg, rgba(11, 9, 28, .95), rgba(35, 12, 19, .88)),
+        repeating-linear-gradient(135deg, #7f1212 0 22px, #dc2626 22px 44px, #ffc247 44px 50px);
+      box-shadow: inset 0 -14px 0 var(--red-dark);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      left: -20px;
+      right: -20px;
+      top: 0;
+      height: 72px;
+      background:
+        repeating-linear-gradient(90deg, var(--tile) 0 34px, #2c173a 34px 68px),
+        linear-gradient(180deg, var(--black), transparent);
+      border-bottom: 6px solid var(--black);
+      clip-path: polygon(0 0, 100% 0, 100% 72%, 97% 100%, 94% 72%, 91% 100%, 88% 72%, 85% 100%, 82% 72%, 79% 100%, 76% 72%, 73% 100%, 70% 72%, 67% 100%, 64% 72%, 61% 100%, 58% 72%, 55% 100%, 52% 72%, 49% 100%, 46% 72%, 43% 100%, 40% 72%, 37% 100%, 34% 72%, 31% 100%, 28% 72%, 25% 100%, 22% 72%, 19% 100%, 16% 72%, 13% 100%, 10% 72%, 7% 100%, 4% 72%, 0 100%);
+    }
+
+    .lanterns {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 74px;
+      height: 82px;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, transparent 0 5%, var(--gold) 5% 95%, transparent 95%),
+        repeating-linear-gradient(90deg, transparent 0 70px, rgba(255,240,188,.75) 70px 74px, transparent 74px 140px);
+      background-size: 100% 4px, 100% 100%;
+      background-repeat: no-repeat;
+    }
+
+    .lanterns span {
+      position: absolute;
+      top: 12px;
+      width: 30px;
+      height: 42px;
+      background: var(--red);
+      border: 4px solid var(--black);
+      box-shadow: 0 0 0 4px rgba(255, 194, 71, .18), 0 0 18px rgba(220,38,38,.9);
+    }
+
+    .lanterns span::before,
+    .lanterns span::after {
+      content: "";
+      position: absolute;
+      left: 6px;
+      right: 6px;
+      height: 4px;
+      background: var(--gold);
+    }
+
+    .lanterns span::before { top: 6px; }
+    .lanterns span::after { bottom: 6px; }
+    .lanterns span:nth-child(1) { left: 8%; }
+    .lanterns span:nth-child(2) { left: 22%; top: 24px; }
+    .lanterns span:nth-child(3) { left: 38%; }
+    .lanterns span:nth-child(4) { left: 55%; top: 24px; }
+    .lanterns span:nth-child(5) { left: 72%; }
+    .lanterns span:nth-child(6) { left: 88%; top: 24px; }
+
+    .hero-inner {
+      max-width: 1220px;
+      margin: 78px auto 0;
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: end;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 5px 11px;
+      margin-bottom: 18px;
+      color: var(--black);
+      background: var(--gold);
+      border: 4px solid var(--black);
+      box-shadow: 6px 6px 0 var(--red-dark);
+      font-weight: 900;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(2.25rem, 6vw, 5.2rem);
+      line-height: 1.02;
+      letter-spacing: 0;
+      text-shadow: 4px 4px 0 var(--black), 8px 8px 0 var(--red);
+      overflow-wrap: anywhere;
+    }
+
+    .subtitle {
+      display: inline-block;
+      margin: 0;
+      padding: 8px 14px;
+      color: var(--paper);
+      background: var(--red-dark);
+      border: 4px solid var(--black);
+      box-shadow: 6px 6px 0 var(--gold);
+      font-size: clamp(1.1rem, 2.5vw, 1.75rem);
+      font-weight: 900;
+    }
+
+    .counter {
+      min-width: 150px;
+      padding: 12px 14px;
+      color: var(--paper);
+      background: #1d1020;
+      border: 4px solid var(--black);
+      box-shadow: 6px 6px 0 var(--black);
+      text-align: right;
+      font-weight: 900;
+    }
+
+    .counter strong {
+      display: block;
+      color: var(--gold);
+      font-size: 2rem;
+      line-height: 1;
+      text-shadow: 3px 3px 0 var(--black);
+    }
+
+    main {
+      width: min(1220px, calc(100% - 28px));
+      height: calc(100vh - var(--header-h) - var(--footer-h));
+      margin: var(--header-h) auto var(--footer-h);
+      padding: 30px 0 34px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-color: var(--gold) rgba(5, 5, 11, .55);
+      scrollbar-width: thin;
+    }
+
+    main::-webkit-scrollbar {
+      width: 14px;
+    }
+
+    main::-webkit-scrollbar-track {
+      background: rgba(5, 5, 11, .55);
+      border-left: 4px solid var(--black);
+    }
+
+    main::-webkit-scrollbar-thumb {
+      background: var(--gold);
+      border: 3px solid var(--black);
+    }
+
+    .street-footer {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 18;
+      height: var(--footer-h);
+      pointer-events: none;
+      background:
+        linear-gradient(180deg, rgba(255, 194, 71, .13), transparent 28px),
+        repeating-linear-gradient(90deg, #2d1510 0 74px, #1d0f12 74px 82px, #5a2717 82px 150px, #140b10 150px 158px);
+      border-top: 8px solid var(--black);
+      box-shadow: inset 0 18px 0 rgba(255, 194, 71, .10), 0 -8px 0 var(--red-dark);
+    }
+
+    .street-footer::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: -20px;
+      height: 18px;
+      background: repeating-linear-gradient(90deg, #1a1026 0 42px, #2c173a 42px 84px);
+      border-top: 4px solid var(--black);
+      border-bottom: 4px solid var(--black);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 24px;
+    }
+
+    .card {
+      min-height: 326px;
+      background: var(--panel);
+      border: 4px solid var(--black);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .card::before {
+      content: "";
+      display: block;
+      height: 18px;
+      background: repeating-linear-gradient(90deg, var(--red-dark) 0 30px, var(--gold) 30px 36px, #241226 36px 66px);
+      border-bottom: 4px solid var(--black);
+    }
+
+    .card:nth-child(4n + 1) { background: #241226; }
+    .card:nth-child(4n + 2) { background: #2c1612; }
+    .card:nth-child(4n + 3) { background: #181832; }
+    .card:nth-child(4n + 4) { background: #102321; }
+
+    .shot {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background:
+        linear-gradient(135deg, rgba(220,38,38,.20), rgba(255,194,71,.16)),
+        #090a16;
+      border-bottom: 4px solid var(--black);
+      display: block;
+      object-fit: cover;
+    }
+
+    .missing-shot {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      display: grid;
+      place-items: center;
+      background: #090a16;
+      border-bottom: 4px solid var(--black);
+      color: var(--paper);
+      font-weight: 900;
+    }
+
+    .card-body { padding: 14px 14px 16px; }
+
+    .game {
+      margin: 0 0 12px;
+      color: #ffffff;
+      font-size: 1.05rem;
+      line-height: 1.28;
+      letter-spacing: 0;
+      text-shadow: 2px 2px 0 var(--black);
+      overflow-wrap: anywhere;
+    }
+
+    .developer {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 5px 10px;
+      color: var(--black);
+      background: var(--gold);
+      border: 3px solid var(--black);
+      box-shadow: 4px 4px 0 var(--black);
+      font-weight: 900;
+    }
+
+    .theme {
+      margin-top: 12px;
+      color: var(--paper);
+      font-size: .86rem;
+      font-weight: 800;
+    }
+
+    @media (max-width: 760px) {
+      :root { --header-h: 372px; --footer-h: 96px; }
+      .hero-inner { grid-template-columns: 1fr; margin-top: 92px; }
+      .counter { text-align: left; }
+      .grid { grid-template-columns: 1fr; }
+      .lanterns span:nth-child(even) { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="lanterns" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <div class="hero-inner">
+      <div>
+        <div class="tag">OLD STREET GAME SELECT</div>
+        <h1>114下_遊戲程式設計</h1>
+        <p class="subtitle">深坑夜市大集合</p>
+      </div>
+      <div class="counter"><strong id="total">0</strong>件作品</div>
+    </div>
+  </header>
+
+  <main>
+    <section class="grid" id="grid" aria-label="學生作品"></section>
+  </main>
+  <footer class="street-footer" aria-hidden="true"></footer>
+
+  <script id="games-data" type="application/json">[{"developer":"鄭凱桀","game":"像素投壺 - Pixel Touhu","theme":"傳統夜市投壺","image":"course_showcase_assets/01-鄭凱桀.png"},{"developer":"王楚丰","game":"拾星者：黑洞與白洞 - 20 關直式試玩原型","theme":"太空解謎/關卡挑戰","image":"course_showcase_assets/02-王楚丰.png"},{"developer":"黃紹維","game":"像素釣蝦王 Pixel Shrimp Master","theme":"像素風夜市小遊戲","image":"course_showcase_assets/03-黃紹維.png"},{"developer":"黃心潔","game":"夜市烤棉花糖","theme":"夜市甜點/料理","image":"course_showcase_assets/04-黃心潔.png"},{"developer":"陳昱圻","game":"夜市推保齡球","theme":"夜市保齡球","image":"course_showcase_assets/05-陳昱圻.png"},{"developer":"呂祐薰","game":"Night Market Shooter - Vaporwave Retro Edition","theme":"射擊/反應遊戲","image":"course_showcase_assets/06-呂祐薰.png"},{"developer":"陳祈彣","game":"夜市撈烏龜遊戲","theme":"夜市撈烏龜","image":"course_showcase_assets/07-陳祈彣.png"},{"developer":"林鈞澤","game":"夜市射氣球大賽 - 完美挑戰版","theme":"夜市射氣球","image":"course_showcase_assets/08-林鈞澤.png"},{"developer":"羅于宣","game":"⚡ 電流XO：極限超頻版 ⚡","theme":"XO 益智對戰","image":"course_showcase_assets/09-羅于宣.png"},{"developer":"丁世軒","game":"夜市嘉年華 - 蓋圓盤與色輪盤","theme":"賽博夜市動作遊戲","image":"course_showcase_assets/10-丁世軒.png"},{"developer":"劉家伶","game":"深坑老街垃圾大作戰","theme":"深坑老街環保清潔","image":"course_showcase_assets/11-劉家伶.png"},{"developer":"賴擇凱","game":"賴擇凱_FPS預告_剪輯_模擬危機","theme":"射擊/反應遊戲","image":"course_showcase_assets/12-賴擇凱.png"},{"developer":"謝宗曄","game":"地瓜球大師 Sweet Potato Ball Master - Pro Edition","theme":"夜市甜點/料理","image":"course_showcase_assets/13-謝宗曄.png"},{"developer":"古珈欣","game":"夜市神射手 V4 (含音效版)","theme":"夜市射擊/投擲挑戰","image":"course_showcase_assets/14-古珈欣.png"},{"developer":"鄧嵐薰","game":"台灣夜市射氣球","theme":"夜市射氣球","image":"course_showcase_assets/15-鄧嵐薰.png"},{"developer":"張家豪","game":"FPS Microgame","theme":"射擊/反應遊戲","image":"course_showcase_assets/16-張家豪.png"},{"developer":"謝書涵","game":"夜市霓虹：街頭節奏","theme":"夜市主題遊戲","image":"course_showcase_assets/17-謝書涵.png"},{"developer":"吳雨芙","game":"NIGHT MARKET: CYBER ULTIMA","theme":"賽博夜市動作遊戲","image":"course_showcase_assets/18-吳雨芙.png"},{"developer":"瞿采靚","game":"像素釣蝦王 Pixel Shrimp Master","theme":"像素風夜市小遊戲","image":"course_showcase_assets/19-瞿采靚.png"},{"developer":"胡珮錡","game":"深坑老街 2D 像素抓娃娃機 - 橫式街機版 16:9","theme":"夜市抓娃娃機","image":"course_showcase_assets/20-胡珮錡.png"},{"developer":"蒲依芸","game":"夢幻甜點屋","theme":"甜點製作/經營","image":"course_showcase_assets/21-蒲依芸.png"},{"developer":"袁興礽","game":"深坑豆腐冰淇淋極速外送 - 2D像素街機","theme":"夜市餐點配送","image":"course_showcase_assets/22-袁興礽.png"},{"developer":"胡婷媛","game":"台灣街頭麻將大亨","theme":"街頭麻將","image":"course_showcase_assets/23-胡婷媛.png"},{"developer":"吳佳穎","game":"3D 夜市套圈圈","theme":"夜市套圈圈","image":"course_showcase_assets/24-吳佳穎.png"},{"developer":"申立嶸","game":"夜市反應王：終極音遊版 V3","theme":"射擊/反應遊戲","image":"course_showcase_assets/25-申立嶸.png"},{"developer":"黃柏勳","game":"拉茶大師 - Teh Tarik Master","theme":"飲品製作","image":"course_showcase_assets/26-黃柏勳.png"},{"developer":"陳瀚儀","game":"深不可廁 - 經典復古深坑老街紅磚版","theme":"深坑老街障礙/惡搞遊戲","image":"course_showcase_assets/27-陳瀚儀.png"},{"developer":"馮浩宸","game":"荒野快槍手 - 線上即玩版","theme":"射擊/反應遊戲","image":"course_showcase_assets/28-馮浩宸.png"},{"developer":"于霈珊","game":"夜市章魚燒大師 🐙","theme":"夜市章魚燒/料理","image":"course_showcase_assets/29-于霈珊.png"},{"developer":"丁孟忻","game":"🔥 像素烤肉攤","theme":"夜市烤肉/料理","image":"course_showcase_assets/30-丁孟忻.png"},{"developer":"黃柏維","game":"夜市王牌九宮格 - 專業強化版","theme":"夜市九宮格","image":"course_showcase_assets/31-黃柏維.png"},{"developer":"李柏蓁","game":"糖葫蘆大師","theme":"夜市甜點/料理","image":"course_showcase_assets/32-李柏蓁.png"},{"developer":"陳品蓉","game":"深坑夜市乒乓球彈跳王 - 2D像素風","theme":"夜市乒乓球彈跳","image":"course_showcase_assets/33-陳品蓉.png"},{"developer":"蕭晴","game":"CROSS CONTRACT：魅影射手 - 雙端極致版","theme":"夜市主題遊戲","image":"course_showcase_assets/34-蕭晴.png"},{"developer":"陳芯怡","game":"夜市丟沙包 - PC 沉浸電玩旗艦版","theme":"夜市丟沙包","image":"course_showcase_assets/35-陳芯怡.png"},{"developer":"廖文歆","game":"棒球九宮格","theme":"夜市九宮格","image":"course_showcase_assets/36-廖文歆.png"},{"developer":"方佳怡","game":"夜市畫糖人 - 完整機制版","theme":"夜市畫糖人","image":"course_showcase_assets/37-方佳怡.png"},{"developer":"李沛蓉","game":"夜市椪糖挑戰 - 30關極限版 (含音效)","theme":"夜市椪糖挑戰","image":"course_showcase_assets/38-李沛蓉.png"},{"developer":"蕭宜蓁","game":"生煎包派送 FRENZY!","theme":"夜市餐點配送","image":"course_showcase_assets/39-蕭宜蓁.png"},{"developer":"周子萍","game":"台灣夜市投籃神射手","theme":"夜市投籃","image":"course_showcase_assets/40-周子萍.png"},{"developer":"柳塏宣","game":"投籃高手 - Basketball Master Web","theme":"夜市投籃","image":"course_showcase_assets/41-柳塏宣.png"},{"developer":"廖曜弘","game":"夜市投籃機","theme":"夜市投籃","image":"course_showcase_assets/42-廖曜弘.png"},{"developer":"蔡孟蓁","game":"深坑夜市戳戳樂","theme":"夜市戳戳樂","image":"course_showcase_assets/43-蔡孟蓁.png"},{"developer":"江婕莉","game":"深坑老街烤玉米大師 - 2D像素職人版","theme":"像素風夜市小遊戲","image":"course_showcase_assets/44-江婕莉.png"},{"developer":"陳逸庭","game":"終極打地鼠 - 豪華街機版","theme":"街機打地鼠","image":"course_showcase_assets/45-陳逸庭.png"},{"developer":"周子詮","game":"像素風夜市撈金魚","theme":"夜市撈金魚","image":"course_showcase_assets/46-周子詮.png"},{"developer":"陳雨瞳","game":"夜市釣水球 - 夢幻祭典升級版","theme":"夜市釣水球","image":"course_showcase_assets/47-陳雨瞳.png"},{"developer":"林馥柔","game":"撈金魚 - 華麗奇幻版","theme":"夜市撈金魚","image":"course_showcase_assets/48-林馥柔.png"}]</script>
+  <script>
+    const games = JSON.parse(document.getElementById("games-data").textContent);
+    const grid = document.getElementById("grid");
+    document.getElementById("total").textContent = games.length;
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
+    }
+
+    grid.innerHTML = games.map(game => `
+      <article class="card">
+        ${game.image
+          ? `<img class="shot" src="${encodeURI(game.image)}" alt="${escapeHtml(game.game)}">`
+          : `<div class="missing-shot">NO IMAGE</div>`}
+        <div class="card-body">
+          <h2 class="game">${escapeHtml(game.game)}</h2>
+          <div class="developer">${escapeHtml(game.developer)}</div>
+          <div class="theme">${escapeHtml(game.theme)}</div>
+        </div>
+      </article>
+    `).join("");
+  </script>
+</body>
+</html>
